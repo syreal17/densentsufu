@@ -25,6 +25,23 @@ func run_checks() -> void:
 	var world := (load("res://world.tscn") as PackedScene).instantiate()
 	root.add_child(world)
 	await process_frame
+	var ground := world.get_node("Ground") as TileMapLayer
+	check(ground.get_used_rect() == Rect2i(0, 0, 100, 100), "Marble map must be 100 by 100 tiles")
+	check(ground.get_used_cells().size() == 10000, "Marble map must have no empty cells")
+	check(ground.tile_set.resource_path == "res://marble_tileset.tres", "Main map must use the marble tileset")
+	check((Vector2(ground.tile_set.tile_size) * ground.scale).is_equal_approx(Vector2(16, 16)), "Marble tiles must fit the world scale")
+	for source_id in range(3):
+		var source := ground.tile_set.get_source(source_id) as TileSetAtlasSource
+		check(source != null and source.has_tile(Vector2i.ZERO), "Missing marble atlas tile " + str(source_id))
+		if source:
+			check(source.texture.resource_path == "res://assets/marble-tileset.png", "Marble atlas must use the supplied texture")
+	check((world.get_node("Fountain") as Node2D).position == Vector2(800, 800), "Fountain must be at the map center")
+	var grassland := (load("res://grassland.tscn") as PackedScene).instantiate()
+	var grass_ground := grassland.get_node("Ground") as TileMapLayer
+	check(grass_ground.get_used_rect() == Rect2i(0, 0, 100, 100), "Original grassland map must be preserved")
+	check(grass_ground.tile_set.resource_path == "res://grass_tileset.tres", "Original map must use the grass tileset")
+	check((grassland.get_node("Fountain") as Node2D).position == Vector2(688, 784), "Original fountain placement must be preserved")
+	grassland.free()
 	var hero := world.get_node("Hero") as Node2D
 	hero.set_physics_process(false)
 	var sprite := hero.get_node("AnimatedSprite2D") as AnimatedSprite2D
@@ -42,32 +59,65 @@ func run_checks() -> void:
 	var directions := ["down", "left", "up", "right"]
 	var offsets := [Vector2.DOWN, Vector2.LEFT, Vector2.UP, Vector2.RIGHT]
 	for i in range(4):
-		hero.position = Vector2(800, 800)
+		hero.position = Vector2(300, 300)
 		key(keys[i], true)
 		hero.call("_physics_process", 1.0)
-		check(hero.position.is_equal_approx(Vector2(800, 800) + offsets[i] * 120), "Movement failed: " + directions[i])
+		check(hero.position.is_equal_approx(Vector2(300, 300) + offsets[i] * 120), "Movement failed: " + directions[i])
 		check(sprite.animation == "walk_" + directions[i], "Walking animation failed: " + directions[i])
 		key(keys[i], false)
 		hero.call("_physics_process", 0.1)
 		check(sprite.animation == "idle_" + directions[i], "Idle facing failed: " + directions[i])
-	hero.position = Vector2(800, 800)
+	hero.position = Vector2(300, 300)
 	key(KEY_W, true)
 	key(KEY_D, true)
 	hero.call("_physics_process", 1.0)
-	check(is_equal_approx(hero.position.distance_to(Vector2(800, 800)), 120.0), "Diagonal movement must be normalized")
+	check(is_equal_approx(hero.position.distance_to(Vector2(300, 300)), 120.0), "Diagonal movement must be normalized")
 	check(sprite.animation == "walk_up", "WASD diagonal animation failed")
 	key(KEY_W, false)
 	key(KEY_D, false)
-	hero.position = Vector2(1592, 1588)
+	hero.position = Vector2(1592, 1600)
 	key(KEY_RIGHT, true)
 	key(KEY_DOWN, true)
 	hero.call("_physics_process", 1.0)
-	check(hero.position == Vector2(1592, 1588), "Hero left map bounds")
+	check(hero.position == Vector2(1592, 1600), "Hero left map bounds")
 	check(sprite.animation == "idle_down", "Blocked hero should use idle animation")
 	key(KEY_RIGHT, false)
 	key(KEY_DOWN, false)
 
+	var fountain := world.get_node("Fountain") as StaticBody2D
+	check(world.y_sort_enabled, "World must sort the hero and fountain by their ground positions")
+	check(fountain.get_node("Sprite2D") is Sprite2D, "Fountain sprite is missing")
+	check(fountain.get_node("CollisionPolygon2D") is CollisionPolygon2D, "Fountain footprint is missing")
+	for approach in [Vector2.UP, Vector2.DOWN, Vector2.LEFT, Vector2.RIGHT]:
+		hero.position = fountain.position + approach * 140.0
+		await physics_frame
+		var approach_key: Key
+		if approach == Vector2.UP:
+			approach_key = KEY_DOWN
+		elif approach == Vector2.DOWN:
+			approach_key = KEY_UP
+		elif approach == Vector2.LEFT:
+			approach_key = KEY_RIGHT
+		else:
+			approach_key = KEY_LEFT
+		key(approach_key, true)
+		hero.call("_physics_process", 2.0)
+		key(approach_key, false)
+		var distance := (hero.position - fountain.position).dot(approach)
+		check(distance > 25.0 and distance < 100.0, "Fountain should block at its base from " + str(approach))
+		if approach == Vector2.UP:
+			check(hero.position.y < fountain.position.y, "Hero must be sorted behind the fountain from above")
+		elif approach == Vector2.DOWN:
+			check(hero.position.y > fountain.position.y, "Hero must be sorted in front of the fountain from below")
+
+	hero.position = fountain.position + Vector2(-60, -44)
+	await physics_frame
+	key(KEY_RIGHT, true)
+	hero.call("_physics_process", 1.0)
+	key(KEY_RIGHT, false)
+	check(hero.position.is_equal_approx(fountain.position + Vector2(60, -44)), "Hero must be able to walk behind the statuary")
+
 	if failures == 0:
-		print("Verified all eight animations, directional movement, idle facing, and map bounds")
+		print("Verified animations, movement, map bounds, and fountain collision and sorting")
 	world.queue_free()
 	quit(1 if failures else 0)

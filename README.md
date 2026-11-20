@@ -1,8 +1,13 @@
 # densentsufu
 
-The main scene is a 100 × 100 tile grassland with cobblestone roads.
-Open `world.tscn` in Godot to edit the map and its `grass_tileset.tres`
-atlas. Run the project and use WASD or the arrow keys to walk around.
+The main scene, `world.tscn`, is a 100 × 100 marble tile map using
+`marble_tileset.tres`. Its ground layer is scaled so each tile occupies
+16 × 16 world units. The original grassland and cobblestone roads are
+preserved in `grassland.tscn`, using `grass_tileset.tres`.
+Open either scene in Godot to edit it. Run the project and use WASD or the
+arrow keys to walk around.
 The hero faces the direction of travel and has directional walking and idle animations.
+The fountain blocks movement at its base; the hero
+can walk behind its statuary or in front of it.
 
 Run the hero checks with `godot --headless --path . --script res://tests/hero_test.gd`.
