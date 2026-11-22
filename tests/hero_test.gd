@@ -47,13 +47,27 @@ func run_checks() -> void:
 	var sprite := hero.get_node("AnimatedSprite2D") as AnimatedSprite2D
 	var frames := sprite.sprite_frames
 	check(world.get_node("Hero/Camera2D") is Camera2D, "Camera does not follow hero")
-	check(frames.get_animation_names().size() == 8, "Expected eight directional animations")
-	for action in ["idle", "walk"]:
-		for direction in ["down", "left", "up", "right"]:
+	check(frames.get_animation_names().size() == 12, "Expected twelve directional animations")
+	var row_starts := {
+		"idle": [15, 118, 300, 209],
+		"walk": [410, 507, 671, 591],
+		"sit": [780, 865, 1004, 936],
+	}
+	var columns := [461, 599, 738, 876]
+	for action in ["idle", "walk", "sit"]:
+		var directions := ["down", "left", "up", "right"]
+		for direction_index in range(directions.size()):
+			var direction: String = directions[direction_index]
 			var animation: String = action + "_" + direction
 			check(frames.has_animation(animation), "Missing animation: " + animation)
 			check(frames.get_frame_count(animation) == 4, "Expected four frames: " + animation)
 			check(frames.get_animation_loop(animation), "Animation must loop: " + animation)
+			for i in range(frames.get_frame_count(animation)):
+				var atlas := frames.get_frame_texture(animation, i) as AtlasTexture
+				check(atlas != null and atlas.atlas.resource_path == "res://assets/hero2.png", "Wrong sprite sheet: " + animation)
+				if atlas:
+					check(atlas.get_size() == Vector2(110, 150), "Frame alignment changed: " + animation)
+					check(atlas.region.position == Vector2(columns[i], row_starts[action][direction_index]), "Wrong frame region: " + animation)
 
 	var keys := [KEY_DOWN, KEY_LEFT, KEY_UP, KEY_RIGHT]
 	var directions := ["down", "left", "up", "right"]
@@ -83,6 +97,37 @@ func run_checks() -> void:
 	check(sprite.animation == "idle_down", "Blocked hero should use idle animation")
 	key(KEY_RIGHT, false)
 	key(KEY_DOWN, false)
+
+	for i in range(4):
+		hero.position = Vector2(300, 300)
+		key(keys[i], true)
+		hero.call("_physics_process", 0.1)
+		key(keys[i], false)
+		key(KEY_SPACE, true)
+		hero.call("_physics_process", 0.1)
+		check(sprite.animation == "sit_" + directions[i], "Sitting direction failed: " + directions[i])
+		var seated_position := hero.position
+		hero.call("_physics_process", 0.1)
+		check(sprite.animation == "sit_" + directions[i] and hero.position == seated_position, "Holding sit must not toggle or move")
+		key(KEY_SPACE, false)
+		hero.call("_physics_process", 0.1)
+		key(KEY_SPACE, true)
+		hero.call("_physics_process", 0.1)
+		check(sprite.animation == "idle_" + directions[i], "Standing up failed: " + directions[i])
+		key(KEY_SPACE, false)
+		hero.call("_physics_process", 0.1)
+
+	key(KEY_SPACE, true)
+	hero.call("_physics_process", 0.1)
+	key(KEY_SPACE, false)
+	hero.call("_physics_process", 0.1)
+	var seated_position := hero.position
+	key(KEY_RIGHT, true)
+	hero.call("_physics_process", 0.1)
+	check(sprite.animation == "walk_right" and hero.position.x > seated_position.x, "Moving must stand the hero up")
+	key(KEY_RIGHT, false)
+	hero.call("_physics_process", 0.1)
+	check(sprite.animation == "idle_right", "Hero must remain standing after moving")
 
 	var fountain := world.get_node("Fountain") as StaticBody2D
 	check(world.y_sort_enabled, "World must sort the hero and fountain by their ground positions")
@@ -118,6 +163,6 @@ func run_checks() -> void:
 	check(hero.position.is_equal_approx(fountain.position + Vector2(60, -44)), "Hero must be able to walk behind the statuary")
 
 	if failures == 0:
-		print("Verified animations, movement, map bounds, and fountain collision and sorting")
+		print("Verified animations, sitting, movement, map bounds, and fountain collision and sorting")
 	world.queue_free()
 	quit(1 if failures else 0)
