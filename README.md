@@ -10,7 +10,7 @@ Open either scene in Godot to edit it. Run the project and use WASD or the
 arrow keys to walk around.
 The hero faces the direction of travel and has directional walking and idle animations.
 Press Space to sit or stand; walking also stands the hero up.
-The fountain blocks movement at its base; the hero
+The animated fountain blocks movement at its base; the hero
 can walk behind its statuary or in front of it.
 
 Run the hero checks with `godot --headless --path . --script res://tests/hero_test.gd`.

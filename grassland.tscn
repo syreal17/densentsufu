@@ -2,7 +2,7 @@
 
 [ext_resource type="TileSet" path="res://grass_tileset.tres" id="1_fj7yv"]
 [ext_resource type="PackedScene" path="res://hero.tscn" id="2_hero"]
-[ext_resource type="Texture2D" path="res://assets/moon-kingdom-fountain.png" id="3_fountain"]
+[ext_resource type="SpriteFrames" path="res://fountain_frames.tres" id="3_fountain"]
 
 [node name="World" type="Node2D"]
 y_sort_enabled = true
@@ -25,11 +25,12 @@ limit_bottom = 1600
 [node name="Fountain" type="StaticBody2D" parent="."]
 position = Vector2(688, 784)
 
-[node name="Sprite2D" type="Sprite2D" parent="Fountain"]
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="Fountain"]
 texture_filter = 1
-position = Vector2(0, -52.22)
-scale = Vector2(0.14, 0.14)
-texture = ExtResource("3_fountain")
+position = Vector2(-1.4, -51.14)
+scale = Vector2(0.445, 0.445)
+sprite_frames = ExtResource("3_fountain")
+autoplay = "default"
 
 [node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="Fountain"]
 polygon = PackedVector2Array(-82, 0, -76, -11, -58, -21, -32, -27, 0, -29, 32, -27, 58, -21, 76, -11, 82, 0, 76, 11, 58, 21, 32, 27, 0, 29, -32, 27, -58, 21, -76, 11)

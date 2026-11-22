@@ -58,6 +58,8 @@ func run_checks() -> void:
 	check(grass_ground.get_used_rect() == Rect2i(0, 0, 100, 100), "Original grassland map must be preserved")
 	check(grass_ground.tile_set.resource_path == "res://grass_tileset.tres", "Original map must use the grass tileset")
 	check((grassland.get_node("Fountain") as Node2D).position == Vector2(688, 784), "Original fountain placement must be preserved")
+	var grass_fountain := grassland.get_node("Fountain/AnimatedSprite2D") as AnimatedSprite2D
+	check(grass_fountain.autoplay == "default" and grass_fountain.sprite_frames.resource_path == "res://fountain_frames.tres", "Grassland fountain must use the animated frames")
 	grassland.free()
 	var hero := world.get_node("Hero") as Node2D
 	hero.set_physics_process(false)
@@ -148,7 +150,18 @@ func run_checks() -> void:
 
 	var fountain := world.get_node("Fountain") as StaticBody2D
 	check(world.y_sort_enabled, "World must sort the hero and fountain by their ground positions")
-	check(fountain.get_node("Sprite2D") is Sprite2D, "Fountain sprite is missing")
+	var fountain_sprite := fountain.get_node("AnimatedSprite2D") as AnimatedSprite2D
+	var fountain_frames := fountain_sprite.sprite_frames
+	check(fountain_sprite.is_playing(), "Fountain animation must start automatically")
+	check(fountain_frames.get_frame_count("default") == 8 and fountain_frames.get_animation_loop("default"), "Fountain must loop all eight frames")
+	for i in range(8):
+		var atlas := fountain_frames.get_frame_texture("default", i) as AtlasTexture
+		check(atlas != null and atlas.atlas.resource_path == "res://assets/fountain.png", "Fountain must use the new sheet")
+		if atlas:
+			check(atlas.region == Rect2((i % 4) * 543, (i / 4) * 362, 543, 362), "Incorrect fountain frame: " + str(i))
+	fountain_sprite.set_frame_and_progress(0, 0)
+	await create_timer(0.2).timeout
+	check(fountain_sprite.frame != 0, "Fountain animation must advance")
 	check(fountain.get_node("CollisionPolygon2D") is CollisionPolygon2D, "Fountain footprint is missing")
 	for approach in [Vector2.UP, Vector2.DOWN, Vector2.LEFT, Vector2.RIGHT]:
 		hero.position = fountain.position + approach * 140.0
