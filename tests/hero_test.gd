@@ -36,6 +36,23 @@ func run_checks() -> void:
 		if source:
 			check(source.texture.resource_path == "res://assets/marble-tileset.png", "Marble atlas must use the supplied texture")
 	check((world.get_node("Fountain") as Node2D).position == Vector2(800, 800), "Fountain must be at the map center")
+	var road := ground.get_node("Road") as TileMapLayer
+	check(road.tile_set.resource_path == "res://marble_road_tileset.tres", "Road must use the marble brick tileset")
+	var road_source := road.tile_set.get_source(0) as TileSetAtlasSource
+	check(road_source.texture.resource_path == "res://assets/marble-tileset.png", "Road bricks must come from the marble sheet")
+	check(road.get_used_rect() == Rect2i(0, 0, 101, 101), "Roads must reach every map edge")
+	check(road.get_used_cells().size() == 597, "Roads must form a three-tile-wide cross")
+	var road_is_cross := true
+	for y in range(101):
+		for x in range(101):
+			var expected := (x >= 49 and x <= 51) or (y >= 49 and y <= 51)
+			if (road.get_cell_source_id(Vector2i(x, y)) == 0) != expected:
+				road_is_cross = false
+	check(road_is_cross, "Road tiles must form uninterrupted north, south, east, and west routes")
+	var road_center := road.to_global(road.map_to_local(Vector2i(50, 50)))
+	var road_step := road.to_global(road.map_to_local(Vector2i(51, 50))) - road_center
+	check(road_center.is_equal_approx(Vector2(800, 800)), "Roads must be centered on the fountain")
+	check(road_step.is_equal_approx(Vector2(16, 0)), "Road tiles must match the floor's world scale")
 	var grassland := (load("res://grassland.tscn") as PackedScene).instantiate()
 	var grass_ground := grassland.get_node("Ground") as TileMapLayer
 	check(grass_ground.get_used_rect() == Rect2i(0, 0, 100, 100), "Original grassland map must be preserved")
@@ -163,6 +180,6 @@ func run_checks() -> void:
 	check(hero.position.is_equal_approx(fountain.position + Vector2(60, -44)), "Hero must be able to walk behind the statuary")
 
 	if failures == 0:
-		print("Verified animations, sitting, movement, map bounds, and fountain collision and sorting")
+		print("Verified marble roads, animations, sitting, movement, map bounds, and fountain collision and sorting")
 	world.queue_free()
 	quit(1 if failures else 0)

@@ -2,7 +2,9 @@
 
 The main scene, `world.tscn`, is a 100 × 100 marble tile map using
 `marble_tileset.tres`. Its ground layer is scaled so each tile occupies
-16 × 16 world units. The original grassland and cobblestone roads are
+16 × 16 world units. Three-tile-wide brick roads run from each edge to the
+central fountain; their tiles come from `marble_road_tileset.tres`.
+The original grassland and cobblestone roads are
 preserved in `grassland.tscn`, using `grass_tileset.tres`.
 Open either scene in Godot to edit it. Run the project and use WASD or the
 arrow keys to walk around.

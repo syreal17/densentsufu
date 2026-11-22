@@ -1,0 +1,13 @@
+[gd_resource type="TileSet" load_steps=3 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/marble-tileset.png" id="1_marble"]
+
+[sub_resource type="TileSetAtlasSource" id="MarbleBricks"]
+texture = ExtResource("1_marble")
+margins = Vector2i(35, 505)
+texture_region_size = Vector2i(106, 106)
+0:0/0 = 0
+
+[resource]
+tile_size = Vector2i(106, 106)
+sources/0 = SubResource("MarbleBricks")
